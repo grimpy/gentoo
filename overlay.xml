@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- $Header: /var/cvsroot/gentoo/xml/htdocs/proj/en/overlays/layman-global.txt,v 1.396 2009/12/02 10:53:01 robbat2 Exp $ -->
+<layman>
+  <overlay contact="grimpy1@gmail.com" name="Grimpy_overlay" src="git://github.com/grimpy/gentoo.git" status="unofficial" type="git">
+      <link>git://github.com/grimpy/gentoo.git</link>
+      <description>Grimpy Gentoo Overlay</description>
+  </overlay>
+</layman>
