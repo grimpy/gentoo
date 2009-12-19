@@ -29,7 +29,7 @@ RDEPEND="
 	>=x11-libs/gtk+-2.13
 	>=dev-libs/glib-2.21.3
 	>=dev-libs/icu-3.8.1-r1
-	>=net-libs/libsoup-2.27.91
+	>=net-libs/libsoup-2.28.2
 	>=dev-db/sqlite-3
 	>=app-text/enchant-0.22
 
