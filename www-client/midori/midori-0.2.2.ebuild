@@ -35,6 +35,7 @@ src_prepare() {
 	# moving docs to version-specific directory
 	sed -i -e "s:\${DOCDIR}/${PN}:\${DOCDIR}/${PF}/:g" wscript || die
 	sed -i -e "s:/${PN}/user/midori.html:/${PF}/user/midori.html:g" midori/midori-browser.c || die
+	epatch ${FILESDIR}/reorderable.patch
 }
 
 src_configure() {
