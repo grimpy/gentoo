@@ -1,15 +1,31 @@
 diff --git a/extensions/tab-panel.c b/extensions/tab-panel.c
-index 6fb1fc8..fc07708 100644
+index 6fb1fc8..18fb156 100644
 --- a/extensions/tab-panel.c
 +++ b/extensions/tab-panel.c
-@@ -506,7 +506,9 @@ tab_panel_app_add_browser_cb (MidoriApp*       app,
+@@ -206,7 +206,6 @@ midori_extension_button_release_event_cb (GtkWidget*       widget,
+ {
+     GtkTreeModel* model;
+     GtkTreeIter iter;
+-
+     if (event->button < 1 || event->button > 3)
+         return FALSE;
+ 
+@@ -233,7 +232,7 @@ midori_extension_button_release_event_cb (GtkWidget*       widget,
+             tab_panel_popup (widget, event, view);
+ 
+         g_object_unref (view);
+-        return TRUE;
++        return FALSE;
+     }
+     return FALSE;
+ }
+@@ -506,7 +505,8 @@ tab_panel_app_add_browser_cb (MidoriApp*       app,
      g_object_set_data (G_OBJECT (browser), "tab-panel-ext-model", model);
      treeview = gtk_tree_view_new_with_model (GTK_TREE_MODEL (model));
      gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview), FALSE);
 -    gtk_tree_view_set_show_expanders (GTK_TREE_VIEW (treeview), FALSE);
 +    gtk_tree_view_set_show_expanders (GTK_TREE_VIEW (treeview), TRUE);
 +    gtk_tree_view_set_reorderable (GTK_TREE_VIEW (treeview), TRUE);
-+    gtk_tree_view_set_show_expanders (GTK_TREE_VIEW (treeview), TRUE);
      #if GTK_CHECK_VERSION (2, 12, 0)
      g_signal_connect (treeview, "query-tooltip",
          G_CALLBACK (tab_panel_treeview_query_tooltip_cb), NULL);
