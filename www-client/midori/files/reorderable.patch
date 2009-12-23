@@ -1,8 +1,67 @@
 diff --git a/extensions/tab-panel.c b/extensions/tab-panel.c
-index 6fb1fc8..18fb156 100644
+index 6fb1fc8..636eea3 100644
 --- a/extensions/tab-panel.c
 +++ b/extensions/tab-panel.c
-@@ -206,7 +206,6 @@ midori_extension_button_release_event_cb (GtkWidget*       widget,
+@@ -71,25 +71,47 @@ tab_panel_get_toolitem_for_view (GtkWidget* view)
+ {
+     return g_object_get_data (G_OBJECT (view), "tab-panel-ext-toolitem");
+ }
++typedef struct {
++    GtkTreeIter iter;
++    gpointer view;
++    gboolean found;
++} ForUserData;
++
++static gboolean 
++tab_panel_get_iter_for_view_helper(GtkTreeModel* model,
++                            GtkTreePath* path,
++                            GtkTreeIter* iter,
++                            ForUserData* helper)
++{
++    MidoriView* view_;
++    gtk_tree_model_get (model, iter, 0, &view_, -1);
++    g_object_unref (view_);
++    if (view_ == helper->view)
++    {
++        helper->found = TRUE;
++        helper->iter = *iter;
++        return TRUE;
++    }
++    return FALSE;
++    
++}
+ 
+ static gboolean
+ tab_panel_get_iter_for_view (GtkTreeModel* model,
+                              GtkTreeIter*  iter,
+                              gpointer      view)
+ {
+-    guint i = 0;
+-
+-    while (gtk_tree_model_iter_nth_child (model, iter, NULL, i))
++    ForUserData helper;
++    helper.view = view;
++    helper.found = FALSE;
++    gtk_tree_model_foreach(model, 
++                        (GtkTreeModelForeachFunc)tab_panel_get_iter_for_view_helper, 
++                        &helper);
++    if (helper.found == TRUE)
+     {
+-        MidoriView* view_;
+-
+-        gtk_tree_model_get (model, iter, 0, &view_, -1);
+-        g_object_unref (view_);
+-        if (view_ == view)
+-            return TRUE;
+-        i++;
++        *iter = helper.iter;
++        return TRUE;
+     }
+-
+     return FALSE;
+ }
+ 
+@@ -206,7 +228,6 @@ midori_extension_button_release_event_cb (GtkWidget*       widget,
  {
      GtkTreeModel* model;
      GtkTreeIter iter;
@@ -10,7 +69,7 @@ index 6fb1fc8..18fb156 100644
      if (event->button < 1 || event->button > 3)
          return FALSE;
  
-@@ -233,7 +232,7 @@ midori_extension_button_release_event_cb (GtkWidget*       widget,
+@@ -233,7 +254,7 @@ midori_extension_button_release_event_cb (GtkWidget*       widget,
              tab_panel_popup (widget, event, view);
  
          g_object_unref (view);
@@ -19,7 +78,7 @@ index 6fb1fc8..18fb156 100644
      }
      return FALSE;
  }
-@@ -506,7 +505,8 @@ tab_panel_app_add_browser_cb (MidoriApp*       app,
+@@ -506,7 +527,8 @@ tab_panel_app_add_browser_cb (MidoriApp*       app,
      g_object_set_data (G_OBJECT (browser), "tab-panel-ext-model", model);
      treeview = gtk_tree_view_new_with_model (GTK_TREE_MODEL (model));
      gtk_tree_view_set_headers_visible (GTK_TREE_VIEW (treeview), FALSE);
