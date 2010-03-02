@@ -1,0 +1,179 @@
+--- /usr/bin/ssh-installkeys	2009-12-03 21:53:30.362234000 +0200
++++ ./ssh-installkeys	2010-03-02 22:58:05.327297666 +0200
+@@ -229,7 +229,7 @@
+             raise TypeError, 'Pattern argument must be a string or a list of strings.'
+ 
+         return compiled_pattern_list
+- 
++
+     def expect(self, pattern, timeout = None):
+         """This seeks through the stream looking for the given
+         pattern. The 'pattern' can be a string or a list of strings.
+@@ -320,7 +320,7 @@
+             self.after = None
+             self.match = None
+             raise
+-            
++
+     def expect_list(self, pattern_list, local_timeout = None):
+         """This is called by expect(). This takes a list of compiled
+         regular expressions. This returns the index into the pattern_list
+@@ -328,9 +328,9 @@
+ 
+         """
+ 
+-        if local_timeout is None: 
++        if local_timeout is None:
+             local_timeout = self.timeout
+-        
++
+         try:
+             incoming = ''
+             while 1: # Keep reading until exception or return.
+@@ -341,7 +341,7 @@
+                 index = -1
+                 for cre in pattern_list:
+                     index = index + 1
+-                    if cre is EOF: 
++                    if cre is EOF:
+                         continue # The EOF pattern is not a regular expression.
+                     match = cre.search(incoming)
+                     if match is not None:
+@@ -361,18 +361,18 @@
+             self.after = None
+             self.match = None
+             raise
+-            
++
+     def read(self, n, timeout = None):
+         """This reads up to n characters from the child application.
+         It includes a timeout. If the read does not complete within the
+         timeout period then a TIMEOUT exception is raised.
+         If the end of file is read then an EOF exception will be raised.
+ 
+-        Notice that if this method is called with timeout=None 
++        Notice that if this method is called with timeout=None
+         then it actually may block.
+ 
+         This is a non-blocking wrapper around os.read().
+-        It uses select.select() to supply a timeout. 
++        It uses select.select() to supply a timeout.
+ 
+         """
+         # Note that some systems like Solaris don't seem to ever give
+@@ -385,7 +385,7 @@
+             if not r:
+                 self.flag_eof = 1
+                 raise EOF ('End Of File (EOF) in read(). Braindead platform.')
+-        
++
+         r, w, e = select.select([self.child_fd], [], [], timeout)
+         if not r:
+             raise TIMEOUT('Timeout exceeded in read().')
+@@ -399,7 +399,7 @@
+             if s == '':
+                 self.flag_eof = 1
+                 raise EOF('End Of File (EOF) in read(). Empty string style platform.')
+-            
++
+             return s
+ 
+         raise ExceptionPexpect('Reached an unexpected state in read().')
+@@ -445,7 +445,7 @@
+             os.write(self.child_fd, termios.CEOF)
+         finally:
+             termios.tcsetattr(fd, termios.TCSADRAIN, old) # restore state
+-        
++
+     def isalive(self):
+         """This tests if the child process is running or not.
+         This returns 1 if the child process appears to be running or 0 if not.
+@@ -555,7 +555,7 @@
+             if c != '\\'and state_esc: # escape mode lasts for one character.
+                 state_esc = 0
+ 
+-    # Handle last argument.        
++    # Handle last argument.
+     if arg != '':
+         arg_list.append(arg)
+     return arg_list
+@@ -607,6 +607,8 @@
+             return None			# File doesn't exist
+         else:
+             return seen.split()[0]	# Return permission field of listing.
++    def getFileContents(self, file):
++        return self.ssh("cat %s" % file)
+ 
+ def die(msg):
+     print msg
+@@ -641,7 +643,14 @@
+         print file, "already exists."
+     return perms
+ 
+-if __name__ == '__main__': 
++def fileGetContents(file):
++    try:
++        f = open(file)
++        return f.read().strip()
++    finally:
++        f.close()
++
++if __name__ == '__main__':
+     # Process options
+     (options, arguments) = getopt.getopt(sys.argv[1:], "cdhv:p:")
+     check = 0
+@@ -673,7 +682,7 @@
+         else:
+             login = os.environ.get("LOGNAME") or os.environ.get("USER")
+ 
+-    # Verify that key pairs are present on the local side 
++    # Verify that key pairs are present on the local side
+     print "Checking your local configuration..."
+     try:
+         os.chdir(os.getenv("HOME"))
+@@ -705,14 +714,14 @@
+         public_keys = []
+         for (keytype, file) in (("rsa1", "identity"), ("dsa", "id_dsa")):
+             print "About to generate a %s key. You will be prompted for a passphrase," % keytype
+-            print "Pressing enter at that prompt will create a key with no passphrase" 
++            print "Pressing enter at that prompt will create a key with no passphrase"
+             os.system("ssh-keygen -t %s -f %s" % (keytype, file))
+             public_keys.append(file + ".pub")
+ 
+     print "I see the following public keys:", string.join(public_keys,", ")
+     for file in public_keys:
+         private_key = file[:-4]
+-        legend = private_key + " corresponding to " + file + " " 
++        legend = private_key + " corresponding to " + file + " "
+         if os.access(private_key, os.R_OK):
+             print legend + "exists and is readable."
+         else:
+@@ -742,8 +751,26 @@
+          fixperms(session, "~/.ssh", check)
+ 
+          # OK, install keys remotely if they don't exist
+-         if not check and not session.exists("~/.ssh/authorized_keys"):
+-             session.scp(keyfile, "~/.ssh/authorized_keys")
++         authfile = "~/.ssh/authorized_keys"
++         if not check:
++            authfileexists = session.exists(authfile)
++            if not authfileexists:
++                print "Authfile doesnt exists copying your public keys"
++                session.scp(keyfile, authfile)
++            else:
++                print "Authfile exist adding your public keys"
++                authfilecontent = session.getFileContents(authfile)
++                for key in public_keys:
++                    key_contents = fileGetContents(key)
++                    if key_contents not in authfilecontent:
++                        authfilecontent+=key_contents
++                tmppath = tempfile.mktemp()
++                tmp = open(tmppath, 'w')
++                tmp.write(authfilecontent)
++                tmp.close()
++                session.scp(tmppath, authfile)
++
++
+     except SystemExit:
+         pass
+     # It's all over now...
