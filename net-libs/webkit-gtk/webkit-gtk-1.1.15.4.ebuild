@@ -1,10 +1,10 @@
-# Copyright 1999-2009 Gentoo Foundation
+# Copyright 1999-2010 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/net-libs/webkit-gtk/webkit-gtk-1.1.15.4.ebuild,v 1.2 2009/12/14 14:45:36 nirbheek Exp $
+# $Header: /var/cvsroot/gentoo-x86/net-libs/webkit-gtk/webkit-gtk-1.1.15.4.ebuild,v 1.13 2010/03/29 22:28:28 eva Exp $
 
 EAPI="2"
 
-inherit autotools flag-o-matic eutils
+inherit autotools flag-o-matic eutils virtualx
 
 MY_P="webkit-${PV}"
 DESCRIPTION="Open source web browser engine"
@@ -13,33 +13,30 @@ SRC_URI="http://www.webkitgtk.org/${MY_P}.tar.gz"
 
 LICENSE="LGPL-2 LGPL-2.1 BSD"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~ia64 ~ppc ~sparc ~x86 ~x86-fbsd"
+KEYWORDS="alpha amd64 arm ia64 ppc sparc x86 ~x86-fbsd ~x86-freebsd ~amd64-linux ~ia64-linux ~x86-linux ~x86-macos"
 # geoclue
-IUSE="coverage debug doc +gstreamer pango +websockets"
+IUSE="aqua coverage debug doc +gstreamer +websockets"
 
 # use sqlite, svg by default
 # dependency on >=x11-libs/gtk+-2.13 for gail
 RDEPEND="
 	dev-libs/libxml2
 	dev-libs/libxslt
-	media-libs/jpeg
+	media-libs/jpeg:0
 	media-libs/libpng
 	x11-libs/cairo
 
-	>=x11-libs/gtk+-2.13
+	>=x11-libs/gtk+-2.13[aqua=]
 	>=dev-libs/glib-2.21.3
 	>=dev-libs/icu-3.8.1-r1
-	>=net-libs/libsoup-2.28.2
+	>=net-libs/libsoup-2.27.91
 	>=dev-db/sqlite-3
 	>=app-text/enchant-0.22
+	>=x11-libs/pango-1.12
 
 	gstreamer? (
 		media-libs/gstreamer:0.10
 		media-libs/gst-plugins-base:0.10 )
-	pango? ( >=x11-libs/pango-1.12 )
-	!pango? (
-		media-libs/freetype:2
-		media-libs/fontconfig )
 "
 DEPEND="${RDEPEND}
 	>=sys-devel/flex-2.5.33
@@ -52,14 +49,23 @@ DEPEND="${RDEPEND}
 S="${WORKDIR}/${MY_P}"
 
 src_prepare() {
+	# FIXME: Fix unaligned accesses on ARM, IA64 and SPARC
+	use sparc && epatch "${FILESDIR}"/webkit-gtk-1.1.15.2-unaligned.patch
 
-	epatch "${FILESDIR}"/webkit-gtk-1.1.15.4-gzipencoding.patch
+	# Darwin/Aqua build is broken, needs autoreconf
+	epatch "${FILESDIR}"/${P}-darwin-quartz.patch
+
+	# Fix build with icu-4.4
+	epatch "${FILESDIR}/${PN}-1.1.15.4-icu44.patch"
+	epatch "${FILESDIR}/webkit-gtk-1.1.15.4-gzipencoding.patch"
 
 	# Make it libtool-1 compatible
 	rm -v autotools/lt* autotools/libtool.m4 \
 		|| die "removing libtool macros failed"
+
 	# Don't force -O2
 	sed -i 's/-O2//g' "${S}"/configure.ac || die "sed failed"
+
 	# Prevent maintainer mode from being triggered during make
 	AT_M4DIR=autotools eautoreconf
 }
@@ -78,19 +84,15 @@ src_configure() {
 		$(use_enable debug)
 		$(use_enable gstreamer video)
 		$(use_enable websockets web_sockets)
-		--enable-filters --enable-ruby"
-
-	# USE-flag controlled font backend because upstream default is freetype
-	# Remove USE-flag once font-backend becomes pango upstream
-	if use pango; then
-		ewarn "You have enabled the incomplete pango backend"
-		ewarn "Please file any and all bugs *upstream*"
-		myconf="${myconf} --with-font-backend=pango"
-	else
-		myconf="${myconf} --with-font-backend=freetype"
-	fi
+		--enable-filters --enable-ruby
+		$(use aqua && echo "--with-target=quartz")"
 
 	econf ${myconf}
+}
+
+src_test() {
+	# Tests will fail without it, bug 294691
+	Xemake check || die "Test phase failed"
 }
 
 src_install() {
