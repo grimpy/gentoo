@@ -1,0 +1,12 @@
+--- ConsoleKit-0.4.2/tools/ck-collect-session-info.c	2010-09-03 15:54:31.000000000 +0200
++++ ConsoleKit-0.4.2.hack/tools/ck-collect-session-info.c	2010-11-01 20:59:30.193321533 +0200
+@@ -275,7 +275,8 @@
+         ck_process_stat_free (xorg_stat);
+ 
+         /* don't set is-local here - let the daemon do that */
+-
++         si->is_local = TRUE;
++         si->is_local_is_set = TRUE;
+         g_free (si->remote_host_name);
+         si->remote_host_name = NULL;
+ }
