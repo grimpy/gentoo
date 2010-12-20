@@ -34,7 +34,7 @@ src_prepare() {
 	# Fix ubuntu way of launching WM
 	sed -i -e "s:/etc/X11/Xsession::" src/display.c || die
 
-	#epatch "${FILESDIR}"/${PN}-0.1.1-webkit.patch
+	epatch "${FILESDIR}"/gnome_theme.patch
 	#eautoreconf
 }
 
@@ -55,4 +55,5 @@ src_install() {
 	pamd_mimic system-local-login lightdm auth account session
 	dodoc ChangeLog NEWS
 	find "${D}" -name '*.la' -exec rm -f '{}' +
+	rm -rf "${D}/etc/init"
 }
