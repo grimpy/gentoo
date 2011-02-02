@@ -35,6 +35,7 @@ src_prepare() {
 	sed -i -e "s:/etc/X11/Xsession::" src/display.c || die
 
 	epatch "${FILESDIR}"/gnome_theme.patch
+	epatch "${FILESDIR}"/vtfix.patch
 	#eautoreconf
 }
 

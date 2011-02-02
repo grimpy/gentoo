@@ -1,0 +1,14 @@
+--- src/display-manager.c	2010-12-03 03:54:31.000000000 +0200
++++ src/display-manager.c	2011-01-30 22:01:49.220000014 +0200
+@@ -314,7 +314,10 @@
+         if (console_fd >= 0)
+         {
+             int number;
+-            ioctl (console_fd, VT_OPENQRY, &number);
++            if (config_section && g_key_file_has_key (manager->priv->config, config_section, "vt-number", NULL))
++				number = g_key_file_get_integer (manager->priv->config, config_section, "vt-number", NULL);
++			else
++				ioctl (console_fd, VT_OPENQRY, &number);
+             g_debug ("Starting on /dev/tty%d", number);
+             xserver_set_vt (xserver, number);
+             close (console_fd);
